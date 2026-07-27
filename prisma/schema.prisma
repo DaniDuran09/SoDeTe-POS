@@ -57,9 +57,10 @@ model Employee {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user         User                   @relation(fields: [userId], references: [id])
-  company      Company                @relation(fields: [companyId], references: [id])
-  branchAccess EmployeeBranchAccess[]
+  user             User                   @relation(fields: [userId], references: [id])
+  company          Company                @relation(fields: [companyId], references: [id])
+  branchAccess     EmployeeBranchAccess[]
+  employeeSessions EmployeeSession[]
 
   @@unique([userId, companyId])
 }
@@ -77,31 +78,48 @@ model EmployeeBranchAccess {
 }
 
 model Device {
-  id          String  @id @default(uuid())
-  companyId   String
-  branchId    String
-  name        String
-  deviceToken String  @unique // Long-lived token to identify the device
-  isActive    Boolean @default(true)
+  id                   String    @id @default(uuid())
+  companyId            String?
+  branchId             String?
+  name                 String?
+  deviceToken          String?   @unique // Long-lived token issued after linking
+  linkingCode          String?   @unique // Short code for QR/numeric linking
+  linkingCodeExpiresAt DateTime?
+  isActive             Boolean   @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company  Company         @relation(fields: [companyId], references: [id])
-  branch   Branch          @relation(fields: [branchId], references: [id])
-  sessions DeviceSession[]
+  company          Company?          @relation(fields: [companyId], references: [id])
+  branch           Branch?           @relation(fields: [branchId], references: [id])
+  employeeSessions EmployeeSession[]
 }
 
-model DeviceSession {
-  id         String   @id @default(uuid())
+model EmployeeSession {
+  id         String    @id @default(uuid())
   deviceId   String
-  userId     String // The global user who is currently logged in on this device
-  employeeId String // The specific employee context
-  expiresAt  DateTime
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  employeeId String
+  status     String    @default("ACTIVE") // ACTIVE, PAUSED, CLOSED
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  shiftData  Json? // Placeholder for 'corte de caja' or other end-of-shift data
 
-  device Device @relation(fields: [deviceId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  device   Device                @relation(fields: [deviceId], references: [id])
+  employee Employee              @relation(fields: [employeeId], references: [id])
+  auditLog EmployeeSessionAudit[]
+}
+
+model EmployeeSessionAudit {
+  id         String   @id @default(uuid())
+  sessionId  String
+  action     String // E.g., 'LOGIN', 'PAUSE', 'RESUME', 'CLOSE'
+  details    Json?
+  timestamp  DateTime @default(now())
+
+  session EmployeeSession @relation(fields: [sessionId], references: [id])
 }
 
 model ProductTemplate {

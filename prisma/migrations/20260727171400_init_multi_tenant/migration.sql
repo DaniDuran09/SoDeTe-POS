@@ -47,10 +47,12 @@ CREATE TABLE "EmployeeBranchAccess" (
 -- CreateTable
 CREATE TABLE "Device" (
     "id" TEXT NOT NULL,
-    "companyId" TEXT NOT NULL,
-    "branchId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "deviceToken" TEXT NOT NULL,
+    "companyId" TEXT,
+    "branchId" TEXT,
+    "name" TEXT,
+    "deviceToken" TEXT,
+    "linkingCode" TEXT,
+    "linkingCodeExpiresAt" TIMESTAMP(3),
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -59,16 +61,29 @@ CREATE TABLE "Device" (
 );
 
 -- CreateTable
-CREATE TABLE "DeviceSession" (
+CREATE TABLE "EmployeeSession" (
     "id" TEXT NOT NULL,
     "deviceId" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
     "employeeId" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endedAt" TIMESTAMP(3),
+    "shiftData" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "DeviceSession_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "EmployeeSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmployeeSessionAudit" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "details" JSONB,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EmployeeSessionAudit_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -173,6 +188,9 @@ CREATE UNIQUE INDEX "EmployeeBranchAccess_employeeId_branchId_key" ON "EmployeeB
 CREATE UNIQUE INDEX "Device_deviceToken_key" ON "Device"("deviceToken");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Device_linkingCode_key" ON "Device"("linkingCode");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PriceCatalog_resourceType_key" ON "PriceCatalog"("resourceType");
 
 -- CreateIndex
@@ -197,13 +215,19 @@ ALTER TABLE "EmployeeBranchAccess" ADD CONSTRAINT "EmployeeBranchAccess_employee
 ALTER TABLE "EmployeeBranchAccess" ADD CONSTRAINT "EmployeeBranchAccess_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Device" ADD CONSTRAINT "Device_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Device" ADD CONSTRAINT "Device_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Device" ADD CONSTRAINT "Device_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Device" ADD CONSTRAINT "Device_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "DeviceSession" ADD CONSTRAINT "DeviceSession_deviceId_fkey" FOREIGN KEY ("deviceId") REFERENCES "Device"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "EmployeeSession" ADD CONSTRAINT "EmployeeSession_deviceId_fkey" FOREIGN KEY ("deviceId") REFERENCES "Device"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmployeeSession" ADD CONSTRAINT "EmployeeSession_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmployeeSessionAudit" ADD CONSTRAINT "EmployeeSessionAudit_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "EmployeeSession"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "BranchProduct" ADD CONSTRAINT "BranchProduct_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
