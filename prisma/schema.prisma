@@ -8,13 +8,183 @@ datasource db {
 }
 
 model User {
-  id String @id @default(uuid())
-
-  firstName String
-  lastName  String
-
-  email        String @unique
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
   passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employees    Employee[]
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches      Branch[]
+  employees     Employee[]
+  subscriptions Subscription[]
+  quotes        Quote[]
+  devices       Device[]
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company        Company                @relation(fields: [companyId], references: [id])
+  devices        Device[]
+  products       BranchProduct[]
+  employeeAccess EmployeeBranchAccess[]
+}
+
+model Employee {
+  id        String  @id @default(uuid())
+  userId    String
+  companyId String
+  role      String // E.g., OWNER, ADMIN, STAFF
+  pinHash   String? // NIP/PIN for fast access
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                   @relation(fields: [userId], references: [id])
+  company      Company                @relation(fields: [companyId], references: [id])
+  branchAccess EmployeeBranchAccess[]
+
+  @@unique([userId, companyId])
+}
+
+model EmployeeBranchAccess {
+  id          String   @id @default(uuid())
+  employeeId  String
+  branchId    String
+  permissions String[] // e.g., ["SELL", "VIEW_REPORTS"]
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  branch   Branch   @relation(fields: [branchId], references: [id])
+
+  @@unique([employeeId, branchId])
+}
+
+model Device {
+  id          String  @id @default(uuid())
+  companyId   String
+  branchId    String
+  name        String
+  deviceToken String  @unique // Long-lived token to identify the device
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company         @relation(fields: [companyId], references: [id])
+  branch   Branch          @relation(fields: [branchId], references: [id])
+  sessions DeviceSession[]
+}
+
+model DeviceSession {
+  id         String   @id @default(uuid())
+  deviceId   String
+  userId     String // The global user who is currently logged in on this device
+  employeeId String // The specific employee context
+  expiresAt  DateTime
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  device Device @relation(fields: [deviceId], references: [id])
+}
+
+model ProductTemplate {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branchProducts BranchProduct[]
+}
+
+model BranchProduct {
+  id                String   @id @default(uuid())
+  branchId          String
+  productTemplateId String
+  price             Decimal
+  presentation      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  branch          Branch          @relation(fields: [branchId], references: [id])
+  productTemplate ProductTemplate @relation(fields: [productTemplateId], references: [id])
+}
+
+// ---- QUOTATION & SUBSCRIPTION ---- //
+
+model PriceCatalog {
+  id           String   @id @default(uuid())
+  resourceType String   @unique // 'branch', 'employee', 'product'
+  unitPrice    Decimal
+  currency     String   @default("MXN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Quote {
+  id           String   @id @default(uuid())
+  companyId    String? // Can be null if quote is for an anonymous user during onboarding
+  monthlyPrice Decimal
+  currency     String   @default("MXN")
+  status       String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company?    @relation(fields: [companyId], references: [id])
+  items   QuoteItem[]
+}
+
+model QuoteItem {
+  id           String  @id @default(uuid())
+  quoteId      String
+  resourceType String // 'branch', 'employee', 'product'
+  quantity     Int
+  unitPrice    Decimal
+  total        Decimal
+
+  quote Quote @relation(fields: [quoteId], references: [id])
+}
+
+model Subscription {
+  id           String    @id @default(uuid())
+  companyId    String    @unique
+  quoteId      String?   @unique // The quote that generated this subscription
+  status       String    @default("TRIAL") // TRIAL, ACTIVE, PAST_DUE, CANCELED
+  trialEndsAt  DateTime?
+  monthlyPrice Decimal
+  currency     String    @default("MXN")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+model Entitlement {
+  id           String    @id @default(uuid())
+  companyId    String
+  resourceType String // 'branch', 'employee', 'product'
+  quantity     Int
+  type         String // 'CONTRACTED', 'PROMOTIONAL'
+  startsAt     DateTime  @default(now())
+  expiresAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
