@@ -1,6 +1,6 @@
-import { EmployeeRepository } from "../repositories/employee.repository.js";
-import { DeviceRepository } from "../../device/repositories/device.repository.js";
-import { EmployeeSessionRepository } from "../repositories/employee-session.repository.js";
+import type { EmployeeRepository } from "../repositories/employee.repository.js";
+import type { DeviceRepository } from "../../device/repositories/device.repository.js";
+import type { EmployeeSessionRepository } from "../repositories/employee-session.repository.js";
 import { UnauthorizedError, ConflictError } from "../../../shared/errors/http-errors.js";
 import type { HashAdapter } from "../../../shared/security/interfaces/hash.adapter.js";
 import type { TokenAdapter } from "../../../shared/security/interfaces/token.adapter.js";
@@ -28,7 +28,7 @@ export class PosLoginUseCase {
         }
 
         const access = await this.employeeRepository.verifyAccessToBranch(employeeId, device.branchId);
-        if (!access && employee.role !== "OWNER") {
+        if (!access && employee.role !== "ADMIN") {
             throw new UnauthorizedError("Employee does not have access to this branch");
         }
 

@@ -51,7 +51,7 @@ model Employee {
   id        String  @id @default(uuid())
   userId    String
   companyId String
-  role      String // E.g., OWNER, ADMIN, STAFF
+  role      String // 'ADMIN' or 'EMPLOYEE'
   pinHash   String? // NIP/PIN for fast access
 
   createdAt DateTime @default(now())

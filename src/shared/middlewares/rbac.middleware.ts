@@ -14,18 +14,12 @@ export const requirePermissions = (requiredPermissions: string[]) => {
                 throw new ForbiddenError("User context not found");
             }
 
-            // The OWNER role automatically bypasses permission checks
-            if (user.role === "OWNER") {
-                return next();
-            }
-
-            // ADMIN could also bypass, or we might require explicit permissions for ADMINs too.
-            // Let's assume ADMIN bypasses for now, or just OWNER.
+            // The ADMIN role automatically bypasses permission checks
             if (user.role === "ADMIN") {
                 return next();
             }
 
-            // For STAFF, we need to check their explicit permissions array.
+            // For EMPLOYEE, we need to check their explicit permissions array.
             // Since we didn't put 'permissions' in the JWT payload (to keep it small),
             // we should technically query the DB here. 
             // However, to keep it fast, we can either put permissions in the JWT,

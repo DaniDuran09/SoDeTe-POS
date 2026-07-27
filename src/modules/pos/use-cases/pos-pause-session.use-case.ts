@@ -1,4 +1,4 @@
-import { EmployeeSessionRepository } from "../repositories/employee-session.repository.js";
+import type { EmployeeSessionRepository } from "../repositories/employee-session.repository.js";
 import { UnauthorizedError, NotFoundError } from "../../../shared/errors/http-errors.js";
 
 export class PosPauseSessionUseCase {

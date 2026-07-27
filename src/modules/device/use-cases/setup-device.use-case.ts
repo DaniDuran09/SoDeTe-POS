@@ -17,14 +17,14 @@ export class SetupDeviceUseCase {
             throw new UnauthorizedError("Invalid admin employee context");
         }
 
-        if (adminEmployee.role !== "OWNER" && adminEmployee.role !== "ADMIN") {
-            throw new UnauthorizedError("Only OWNER or ADMIN can setup a device");
+        if (adminEmployee.role !== "ADMIN") {
+            throw new UnauthorizedError("Only ADMIN can setup a device");
         }
 
         const access = await this.employeeRepository.verifyAccessToBranch(adminEmployeeId, branchId);
         
-        // Owners implicitly have access to everything, but for strictness we might require explicit access.
-        if (!access && adminEmployee.role !== "OWNER") {
+        // ADMIN implicitly have access to everything, but for strictness we might require explicit access.
+        if (!access && adminEmployee.role !== "ADMIN") {
             throw new UnauthorizedError("Admin does not have access to this branch");
         }
 

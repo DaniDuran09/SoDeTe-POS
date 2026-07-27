@@ -1,5 +1,5 @@
-import { EmployeeRepository } from "../repositories/employee.repository.js";
-import { DeviceRepository } from "../../device/repositories/device.repository.js";
+import type { EmployeeRepository } from "../repositories/employee.repository.js";
+import type { DeviceRepository } from "../../device/repositories/device.repository.js";
 import { UnauthorizedError } from "../../../shared/errors/http-errors.js";
 
 export class GetPosEmployeesUseCase {
